@@ -11,6 +11,7 @@ Main
 ** Request
 ** Receive
 ** Send
+** Wallet - display wallet
 
 Request
 * UI to ask amount (or none) and optional comment
@@ -90,3 +91,5 @@ receive([token])
 ** checks token
 ** TODO think about reject
 ** redeems with issuers or saves in wallet
+
+TODO - next scenario 

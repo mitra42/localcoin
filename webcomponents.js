@@ -24,14 +24,9 @@
 
   //Generally to construct a new Element class
   const Tstyle = `span {color: red}`; // Define any styles for this element
-  const MyBar extends HTMLElementExtended {
+  class MyBar extends HTMLElementExtended {
     constructor() {
       super(); // Always call super
-      this.shadowRoot.append(  // Append any number of style tag
-        EL('style' {textContent: Tstyle}) ); // Using styles defined above
-        EL('link', {rel: 'stylesheet', href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" }); // Or on the net
-      )
-      this.shadowRoot.styleNodes = 2; // And tell it how many style nodes (so not overridden when reloaded)
     }
     loadContent() { // If defined it will call this when the element is defined enough to pass the test at shouldLoadWhenConnected
         this.loadSetRenderAndReplace(`/foo.json`, { case: this.state.myparm }, (err)=>{}); // Call a URL often passing state in the query, can postprocess using this.state.data
@@ -39,7 +34,11 @@
     shouldLoadWhenConnected() { return !this.state.mydata && this.state.myparm}; // a test to define when it needs loading
     static get observedAttributes() { return ['myparm']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
     render() {
-            return ( EL(tag'span', {textContent: "I am a T"})); // build an element tree for this element
+            return ( [
+                EL('style' {textContent: Tstyle}) ), // Using styles defined above
+                EL('link', {rel: 'stylesheet', href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" }), // Or on the net
+                EL('span', {textContent: "I am a T"})
+            ]); // build an element tree for this element
     }
     changeAttribute(name, newValue) {super.changeAttribute(name, name = "x" ? f(newValue): newValue) } // Useful preprocess of attributes
   }
@@ -50,7 +49,7 @@ async function GETp(httpurl, opts) {
     /**
      *  Asynchronous function - returns promise that resolves to JSON or rejects an error
      **/
-    if (typeof httpurl !== 'string') httpurl = httpurl.href;    // Assume its a URL as no way to use "instanceof" on URL across node/browser
+    if (typeof httpurl !== 'string') httpurl = httpurl.href;    // Assume it is a URL as no way to use "instanceof" on URL across node/browser
     const headers = new Headers();
     if (opts.start || opts.end) headers.append('range', `bytes=${opts.start || 0}-${(opts.end < Infinity) ? opts.end : ''}`);
     // if (opts.noCache) headers.append("Cache-Control", "no-cache"); It complains about preflight with no-cache
@@ -98,10 +97,10 @@ function EL(tag, attributes = {}, children) {
         .forEach((kv) => {
             if (['textContent', 'onsubmit', 'onclick', 'innerHTML', 'style'].includes(kv[0])) {
                 el[kv[0]] = kv[1];
-            } else if ((typeof(kv[1]) === 'object') && (typeof(el.state) !== 'undefined')) { // e.g. tagcloud, data
+            } else if ((typeof(kv[1]) === 'object') && (typeof(el.state) !== 'undefined')) { // e.g tagcloud, data
                 el.state[kv[0]] = kv[1];
             } else if ((kv[1] !== null) && (typeof(kv[1]) !== "undefined"))  {
-                // Dont set attributes to null or undefined, they will end up as 'null' or 'undefined'
+                // Do not set attributes to null or undefined, they will end up as 'null' or 'undefined'
                 el.setAttribute(kv[0], kv[1]);
             }
         });
@@ -119,7 +118,7 @@ function getUrl(domain, q) {
     /*
      * Get a suitable URL for a query passed as an object
      * domain: String containing domain part of URL e.g. "http://mitra.biz/foo"
-     * query: Object containing paramters for query part of url.
+     * query: Object containing parameters for query part of url.
      */
     const query = Object.entries(q).map(kv => `${kv[0]}=${encodeURIComponent(kv[1])}`).join('&');
     return query.length ? `${domain}?${query}` : domain;
@@ -145,7 +144,6 @@ class HTMLElementExtended extends HTMLElement {
         super();
         this.attachShadow({mode: 'open'});
         this.state = {}; // Equivalent of React .state
-        this.shadowRoot.styleNodes = 0; // Overridden bhy subclasses
     }
     static get observedAttributes() { return []; }; // Override with array of (string) attributes passed
     loadSetRenderAndReplace(url, q, cb) {
@@ -181,9 +179,64 @@ class HTMLElementExtended extends HTMLElement {
     renderAndReplace() {
         /* render() a new set of nodes, then remove existing ones and add new ones */
         const rendered = [ this.render() ];
-        while (this.shadowRoot.childNodes.length > this.shadowRoot.styleNodes) this.shadowRoot.childNodes[this.shadowRoot.styleNodes].remove()
+        const skipNodes = 0; // = this.shadowRoot.styleNodes
+        while (this.shadowRoot.childNodes.length > skipNodes) this.shadowRoot.childNodes[skipNodes].remove()
         /* Flatten render (not sure why at depth=3), eliminate any undefined */
         this.shadowRoot.append(...rendered.flat(3).filter(n=>!!n));
     }
 }
 // ===== END OF STANDARD PART IN webcomponents.js ON mitrabiz and dist-recommendations
+
+//Generally to construct a new Element class
+const MainStyle = `span {color: red} div.logo {padding: 10px}`; // TODO Define any styles for this element
+class Main extends HTMLElementExtended {
+    constructor() {
+        super(); // Always call super
+    }
+    static get observedAttributes() { return ['menu']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
+    top() {
+        return ([
+            EL('div',{class: 'logo'},[
+                EL('span', {textContent: 'LocalCoin'}),
+            ]),
+            EL('div',{class: 'menu'}, [
+                EL('localcoin-button', {text: 'Request', action: "xxx"}),
+                EL('localcoin-button', {text: 'Send', action: "xxx"}),
+                EL('localcoin-button', {text: 'Receive', action: "xxx"}),
+                EL('localcoin-button', {text: 'Wallet', action: "xxx"}),
+            ])
+        ]);
+    }
+    request() {
+        return ([
+            EL('button', {text: 'Request not done', action: "xxx"}),
+        ]);
+    }
+    render() {
+        return ( [
+            EL('style', {textContent: MainStyle}), // Using styles defined above
+            (this.getAttribute('menu') == 'top')
+            ? this.top()
+            : (this.getAttribute('menu') == 'request')
+            ? this.request()
+            : null, // TODO add other menu opts from top()
+        ]);
+    }
+}
+customElements.define('localcoin-main', Main); // Pass it to browser, note it MUST be xxx-yyy
+
+//Generally to construct a new Element class
+const ButtonStyle = `span {color: black; border: 2px grey solid; padding: 2px; margin: 2px}`; // Define any styles for this element
+class Button extends HTMLElementExtended {
+    constructor() {
+        super(); // Always call super
+    }
+    static get observedAttributes() { return ['text', 'action']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
+    render() {
+        return ( [
+            EL('style', {textContent: ButtonStyle}), // Using styles defined above
+            EL('span', {textContent: this.getAttribute('text')}),
+        ]); // build an element tree for this element
+    }
+}
+customElements.define('localcoin-button', Button); // Pass it to browser, note it MUST be xxx-yyy
