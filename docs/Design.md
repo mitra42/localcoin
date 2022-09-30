@@ -4,6 +4,30 @@ This is an original design doc, it might or might not match the current state of
 
 ## Imagine a system for peer to peer payments.
 
+### Goals
+
+The system design is intended to allow a number of participants to exchange tokens with each other. 
+Ideally it has the following properties.
+
+* The tokens don't have to be in a single currency. 
+* There may, or may not, be a relationship between any currency and fiat currencies
+* Its arbitrarily extendable and backward compatible as it evolves
+* It presumes two kinds of participants: *users*, who may or may not be connected at any particular time, 
+  and *issuers* who are presumed to be able to reach each other via the net. 
+* Is fault tolerant in the case that issuers cannot connect to each other at any particular time
+* Detects bad behavior, which has consequences
+* Supports both online and offline transactions (and hybrid where only one participant is online)
+* Does not require Users to be connected to the same Issuer in order to trade. 
+
+### High Level
+
+From a high level we presume in a typical transaction, 
+* Alice and Bob connect to each in person
+* They both open their apps, and do some back and forth with QR codes or ids 
+* Alice transfers a "check" to Bob, 
+* Bob can validate or deposit that check if online, or spend it offline
+
+
 Two ways to participate - online via a browser - offline via an app
 
 #### In the following assume:
@@ -14,6 +38,8 @@ Where Alice appears in a data structure, it is her Public Key that appears there
 Token  ::=  [Token.Alice; Bob; offset; value]~Alice where :
 Bob is current owner, and Alice is previous
 Token.Alice means a token with Alice as the current owner
+Token.Alice could be represented in such a data structure by a reference (i.e. content addressed tokens) 
+that reference could be a hash, or just the signature
 
 Issuer token ::= [Issuer, Alice, offset, value]~issuer
 The previous token is Null, the Issuer signs it to  Alice. The token should only be treated as valid if you (or your app) trusts the issuer.
@@ -22,7 +48,8 @@ The previous token is Null, the Issuer signs it to  Alice. The token should only
 This is an odd concept but adds some power I haven't seen elsewhere.
 An offset of X means that this token only includes that portion of the parent token starting from X,  so two if there is a Token with value 20 "T.alice":
 [T.alice; Bob; 0, 5]~Alice and [T.alice; Charlie; 5, 15]~Alice would both be valid.
-Offsets are relative to the parent, not the issuer, and Issuer Subsection means the portion of the Issuer token after offsets so...
+Offsets are relative to the parent, not the issuer, 
+and Issuer Subsection means the portion of the Issuer token after offsets so...
 [[...0,100], 50,10],5,5] refers to 5 units starting at position 55 of the issuer token.
 
 #### Transfering
@@ -92,11 +119,12 @@ Any attempt to validate the same portion of the issuer token is invalid. The iss
 [[[T.alice,bob]~alice,  edward]~bob], fanny]. edward
 Shows that Bob cheated, and nobody else could have forged the two signed copies of the same token transfered to different people.
 The issuer not only rejects the double-spent token, but refuses any more (even single spend) tokens from Bob.
-During Valdiation, the issuer should update a set of cheating users with Bob so that the client can, in future, decline any token including that users in its path.
+During Validation, the issuer should update a set of cheating users with Bob so that the client can, in future, decline any token including that users in its path.
 Note that an app will be built so a user can't use it to cheat, so Bob must also be also using a fake app.
 
 #### Typical Online path (Alice paying Bob)
-Bob goes to his prefered online site (aka issuer) bobsissuer.com/receive - is authenticated (probably remembered credentials) which gives a prompt for an amount - default none - and then displays a QR code with a URL back to the same site, including Bob's Public key and optionally amount.
+Bob goes to his prefered online site (aka issuer) bobsissuer.com/receive - 
+is authenticated (probably remembered credentials) which gives a prompt for an amount - default none - and then displays a QR code with a URL back to the same site, including Bob's Public key and optionally amount.
 This QR code can be statically generated and saved, or embedded in a menu or website etc.
 
 Alice goes to her prefered online site / issuer aliceissuer.com/pay
@@ -129,12 +157,23 @@ Note that the QR codes in the browser and app cases are identical, so:
 if Bob does not have the app, then he can access the site for his personal QR code, and to deposit the payment.
 If Alice does not have the app, then she can scan Bob's QR code with her browser and have the token generated from her balance.
 
+
+#### Bob registers an email list to Public Key mapping (for paying to an email address)
+* Bob access server/register_email?email=bob@bob.com
+* Server sends [challenge]~server to bob@bob.com
+* Bob clicks on link, and sends [challenge,bob,bob@bob.com]~bob to Server
+* Server confirms the public key "bob" signed this, and accepts registration bob@bob.com -> bob
+
 #### TODO
+* Find QR display (scanner is in browser but maybe good in app too)
 * SETTLEMENT between Issuers via broker
 * ATM (withdraw balance to app as a token)
 * Transaction fees - maybe via "gas"
 * Backup and restore tokens
 * Multi-currency
+* Constraints on coins e.g. only xfer to issuer
+* Think replacing nested tokens by content addressed tokens, i.e. this is the hash of them. 
+* Build local storage wrapper
 
 #### Notes:
 https://github.com/mebjas/html5-qrcode or https://github.com/nimiq/qr-scanner

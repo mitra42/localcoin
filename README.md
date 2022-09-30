@@ -1,4 +1,7 @@
+### STATUS
+This project is very much at the design stage - with some early coding happening occasionally. 
 
+Please see Design.md 
 
 ### TODO
 List of major tasks.

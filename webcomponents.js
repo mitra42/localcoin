@@ -88,14 +88,14 @@ function GET(httpurl, opts, cb ) {
 function EL(tag, attributes = {}, children) {
     /**
      * Simplify element creation
-     * tag: String for the tag eg. "FORM"
+     * tag: String for the tag e.g. "FORM"
      * attributes: object setting attributes, properties and state of the tag (state typically used for extensions)
      * children: Elements inside this tag
      */
     const el = document.createElement(tag);
     Object.entries(attributes)
         .forEach((kv) => {
-            if (['textContent', 'onsubmit', 'onclick', 'innerHTML', 'style'].includes(kv[0])) {
+            if (['textContent', 'onsubmit', 'onclick', 'innerHTML', 'style', 'action'].includes(kv[0])) {
                 el[kv[0]] = kv[1];
             } else if ((typeof(kv[1]) === 'object') && (typeof(el.state) !== 'undefined')) { // e.g tagcloud, data
                 el.state[kv[0]] = kv[1];
@@ -175,7 +175,9 @@ class HTMLElementExtended extends HTMLElement {
             this.loadContent(); }
         this.renderAndReplace(); // note this happens before the loadContent completes
     }
-
+    loadContent() {
+        console.error("loadContent should be defined in a subclass if shouldLoadWhenConnected is set");
+    }
     renderAndReplace() {
         /* render() a new set of nodes, then remove existing ones and add new ones */
         const rendered = [ this.render() ];
@@ -192,32 +194,45 @@ const MainStyle = `span {color: red} div.logo {padding: 10px}`; // TODO Define a
 class Main extends HTMLElementExtended {
     constructor() {
         super(); // Always call super
+        this.button_request2 = this.button_request;
     }
     static get observedAttributes() { return ['menu']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
+    button_request = (e) => {
+        console.log("DEBUG: button call to button_request"); // TODO-NextUp.1.1.1 - make this redirect to a parameter = request or something
+        this.setAttribute('menu', 'request') // TODO-NextUp.1.1.2 this triggers in Main.render ~L235
+        e.preventDefault(); // Don't trigger click on any parent
+    }
+    button_TODO = (e) => {
+        console.log("DEBUG: this button is not yet implemented"); // TODO implement wherever this is used
+        e.preventDefault(); // Don't trigger click on any parent
+    }
     top() {
+        //TODO-NextUp.1.1 get search string, then parse with URLSearchParms(window.location.search).get('menu')
         return ([
             EL('div',{class: 'logo'},[
                 EL('span', {textContent: 'LocalCoin'}),
             ]),
             EL('div',{class: 'menu'}, [
-                EL('localcoin-button', {text: 'Request', action: "xxx"}),
-                EL('localcoin-button', {text: 'Send', action: "xxx"}),
-                EL('localcoin-button', {text: 'Receive', action: "xxx"}),
-                EL('localcoin-button', {text: 'Wallet', action: "xxx"}),
+                EL('localcoin-button', {text: 'Request', onclick: this.button_request }),
+                EL('localcoin-button', {text: 'Send', onclick: this.button_TODO}),
+                EL('localcoin-button', {text: 'Receive', onclick: this.button_TODO}),
+                EL('localcoin-button', {text: 'Wallet', onclick: this.button_TODO}),
             ])
         ]);
     }
     request() {
         return ([
-            EL('button', {text: 'Request not done', action: "xxx"}),
+            EL('localcoin-button', {text: 'Request not implemented', action: "xxx"}), //TODO - note this is the URL for request, not the button
         ]);
     }
     render() {
-        return ( [
+        // First load will be "top" unless set in the URL, after will be set functionally
+        let menu = this.getAttribute('menu') || new URLSearchParams(window.location.search).get('menu') || 'top'
+        return ( [ // TODO-NextUp-1.1.3 Make this an WebComp = main with WebCOmp.page.
             EL('style', {textContent: MainStyle}), // Using styles defined above
-            (this.getAttribute('menu') == 'top')
+            (menu === 'top')
             ? this.top()
-            : (this.getAttribute('menu') == 'request')
+            : menu === 'request'
             ? this.request()
             : null, // TODO add other menu opts from top()
         ]);
@@ -228,6 +243,7 @@ customElements.define('localcoin-main', Main); // Pass it to browser, note it MU
 //Generally to construct a new Element class
 const ButtonStyle = `span {color: black; border: 2px grey solid; padding: 2px; margin: 2px}`; // Define any styles for this element
 class Button extends HTMLElementExtended {
+    // Note action is handled by setting onclick
     constructor() {
         super(); // Always call super
     }

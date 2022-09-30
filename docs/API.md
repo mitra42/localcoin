@@ -74,7 +74,11 @@ receive([token])
 
 
 ## Scenarios
+
+### Bob requesting money from Alice
+
 * Bob accesses app at SERVER/index.html
+TODO-NextUp.1 Build this scenario out from here down
 * Hits "Request"
 ** Fills in amount TODO handle case of amount not known
 ** Calls myQRcode(amount) 
