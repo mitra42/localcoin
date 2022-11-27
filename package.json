@@ -1,5 +1,4 @@
 {
-{
   "author": {
     "name": "Mitra Ardron",
     "email": "mitra@mitra.biz",
@@ -9,6 +8,7 @@
   "bugs": "https://github.com/mitra42/localcoin/issues",
   "description": "A concept for a local QR code driven coin running in browsers with distributed servers",
   "dependencies": {
+    "qrcode": "^1.5.1"
   },
   "devDependencies": {
     "eslint": "^7.27.0",
@@ -26,4 +26,4 @@
   "name": "localcoin",
   "scripts": {},
   "version": "0.0.1"
-},
+}

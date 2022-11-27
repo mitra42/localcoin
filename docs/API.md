@@ -78,15 +78,15 @@ receive([token])
 ### Bob requesting money from Alice
 
 * Bob accesses app at SERVER/index.html
-TODO-NextUp.1 Build this scenario out from here down
 * Hits "Request"
-** Fills in amount TODO handle case of amount not known
-** Calls myQRcode(amount) 
+** Fills in amount
+** Calls myQRcode(amount)
 ** Displays result
 * Alice's app scans this QR code.
 ** Alice's app decodes URL
 ** If no value in URL it prompts for one.
 ** otherwise it confirms  the amount with Alice.
+  TODO-NextUp.3 Build this scenario out from here down
 ** calls send() to get QR code
 ** displays QR code
 * Bob hits Receive

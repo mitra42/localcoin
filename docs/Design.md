@@ -166,6 +166,11 @@ If Alice does not have the app, then she can scan Bob's QR code with her browser
 
 #### TODO
 * Find QR display (scanner is in browser but maybe good in app too)
+* Find QR scanner and add to app 
+  * https://developer.mozilla.org/en-US/docs/Web/API/BarcodeDetector/detect - but needs image from camera
+  * https://www.dynamsoft.com/codepool/web-qr-code-scanner-barcode-detection-api.html
+  * https://github.com/xulihang/barcode-detection-api-demo/blob/main/scanner.js
+  * https://dev.to/ycmjason/detecting-barcode-from-the-browser-d7n
 * SETTLEMENT between Issuers via broker
 * ATM (withdraw balance to app as a token)
 * Transaction fees - maybe via "gas"
@@ -178,3 +183,22 @@ If Alice does not have the app, then she can scan Bob's QR code with her browser
 #### Notes:
 https://github.com/mebjas/html5-qrcode or https://github.com/nimiq/qr-scanner
 https://openbase.com/categories/js/best-javascript-qr-code-scanner-libraries recommends same ones
+
+
+#### QT Codes notes
+From https://codepen.io/ycmjason/pen/PoKRWpp
+<video id="stream" style="width: 100vw; height: 100vh;"/>
+
+(async () => {
+const stream = await navigator.mediaDevices.getUserMedia({
+video: {
+facingMode: {
+ideal: 'environment'
+}
+},
+audio: false
+});
+const videoEl = document.querySelector('#stream');
+videoEl.srcObject = stream;
+await videoEl.play();
+})();

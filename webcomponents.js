@@ -6,8 +6,10 @@
     and where attribute is object or undefined
     nested arrays of children are flattened and undefined/null eliminated
   getUrl(domain, {args})  Return a suitable URL by passing args through as parameters and encoding
-// ... TODO fill in after EL and backcopy to mitra.biz
-// ...TODO fill in after Standardized
+  ErrorLoadingWrapper({url, qdata, err}, children)
+    Wrap around a function if want to replace with an error message if err, or "Loading" if no data yet
+// ... TODO fill docs in after ErrorLoadingWrapper and backcopy to mitra.biz
+// ...TODO fill in docs after Standardized
 // ClickableBase visible
 //   shadowEls OneEntryStyle, fontAwesome;
 //   show(); hide(); render_control() (chevron)
@@ -15,11 +17,10 @@
 // - ClickableLine visible title="" (trailing <hr>): show <span slot=title
 // - OneEntry id=123 title= server= url= text= visible: one entry with a more.. link
 //     loadContent()
-// ...TODO fill in before bottom
+// ...TODO fill in docs before bottom
 */
 
 // ===== STANDARD PART IN {mitrabiz, dist-recommendations, localcoin}/webcomponents.js and map_browser/imap_webcomponents.js, and promise-oriented in simulator.js}
-// TODO review standard stuff from here down, probably remove styleNodes count
 /*
 
   //Generally to construct a new Element class
@@ -95,9 +96,12 @@ function EL(tag, attributes = {}, children) {
     const el = document.createElement(tag);
     Object.entries(attributes)
         .forEach((kv) => {
-            if (['textContent', 'onsubmit', 'onclick', 'innerHTML', 'style', 'action'].includes(kv[0])) {
+            if (['textContent', 'onsubmit', 'onclick', 'onchange', 'innerHTML', 'style', 'action'].includes(kv[0])) {
                 el[kv[0]] = kv[1];
             } else if ((typeof(kv[1]) === 'object') && (typeof(el.state) !== 'undefined')) { // e.g tagcloud, data
+                el.state[kv[0]] = kv[1];
+            } else if ((typeof(kv[1]) === 'function') && (typeof(el.state) !== 'undefined')) {
+                // Experimental e.g passing function on parent to daughtr
                 el.state[kv[0]] = kv[1];
             } else if ((kv[1] !== null) && (typeof(kv[1]) !== "undefined"))  {
                 // Do not set attributes to null or undefined, they will end up as 'null' or 'undefined'
@@ -119,12 +123,12 @@ function getUrl(domain, q) {
      * Get a suitable URL for a query passed as an object
      * domain: String containing domain part of URL e.g. "http://mitra.biz/foo"
      * query: Object containing parameters for query part of url.
+     *  Will strip out nulls
      */
-    const query = Object.entries(q).map(kv => `${kv[0]}=${encodeURIComponent(kv[1])}`).join('&');
+    const query = Object.entries(q).filter(kv => ((kv[1] != null) && (typeof(kv[1]) !== 'undefined'))).map(kv => `${kv[0]}=${encodeURIComponent(kv[1])}`).join('&');
     return query.length ? `${domain}?${query}` : domain;
 }
 
-//TODO document from here down - in function and at top of file
 const ErrorLoadingWrapper = ({url, qdata, err}, children) => (
     /*
       Wrapped around element tree to replace it with Error message or loading warning
@@ -136,6 +140,7 @@ const ErrorLoadingWrapper = ({url, qdata, err}, children) => (
             : children
 );
 
+//TODO document from here down - in function and at top of file
 class HTMLElementExtended extends HTMLElement {
     /*
       Parent class for extending HTMLElement for a new element, usually an element will extend this instead of HTMLElement
@@ -181,64 +186,170 @@ class HTMLElementExtended extends HTMLElement {
     renderAndReplace() {
         /* render() a new set of nodes, then remove existing ones and add new ones */
         const rendered = [ this.render() ];
-        const skipNodes = 0; // = this.shadowRoot.styleNodes
+        const skipNodes = 0; // = this.shadowRoot.styleNodes - note deprecated, typically render style each time now
         while (this.shadowRoot.childNodes.length > skipNodes) this.shadowRoot.childNodes[skipNodes].remove()
         /* Flatten render (not sure why at depth=3), eliminate any undefined */
         this.shadowRoot.append(...rendered.flat(3).filter(n=>!!n));
     }
 }
 // ===== END OF STANDARD PART IN webcomponents.js ON mitrabiz and dist-recommendations
-
-//Generally to construct a new Element class
 const MainStyle = `span {color: red} div.logo {padding: 10px}`; // TODO Define any styles for this element
-class Main extends HTMLElementExtended {
+
+class Main extends HTMLElementExtended { // TMove this to WebComponents standard section
     constructor() {
         super(); // Always call super
-        this.button_request2 = this.button_request;
     }
-    static get observedAttributes() { return ['menu']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
-    button_request = (e) => {
-        console.log("DEBUG: button call to button_request"); // TODO-NextUp.1.1.1 - make this redirect to a parameter = request or something
-        this.setAttribute('menu', 'request') // TODO-NextUp.1.1.2 this triggers in Main.render ~L235
+    static get observedAttributes() { return ['page']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
+}
+const QRstyle = `div.qrcode {color: black; border: 2px grey solid; background-color: aquamarine; padding: 2px; margin: 2px}`; // Define any styles for this element
+
+class QRcodeComponent extends HTMLElementExtended {
+    // constructor() { super(); } // Default calls super
+    static get observedAttributes() { return ['text']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
+    render() {
+        let myCanvas = EL('canvas');
+        let text =  this.getAttribute('text');
+        QRCode.toCanvas(myCanvas,text, function (error) {
+            if (error) console.error(error);
+            console.log('QR displayed', text);
+        })
+        return [ myCanvas ];
+    }
+}
+customElements.define('common-qrcode', QRcodeComponent); // Pass it to browser, note it MUST be xxx-yyy
+
+class LocalCoinQRcode extends HTMLElementExtended {
+    // TODO split this into the part that makes the url and the part that renders it (which gets passed qrUrl)
+    // constructor() { super(); } // Default calls super
+    static get observedAttributes() { return ['amount', 'page']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
+    render() {
+        // TODO-next-3
+        let MYPUBLICKEY="a1b2c3"; // TODO-next-3
+        //let basepage = 'http://nowhere.com/localcoin';
+        let basepage = ''; // TODO replace when not testing
+        let qrUrl = getUrl(basepage, {page: this.getAttribute('page'), to: MYPUBLICKEY, amount: this.getAttribute('amount') });
+
+        return [
+            EL('style', {textContent: QRstyle}), // Using styles defined above
+            EL('span', {textContent: 'QR code for:'}),
+            EL('div', {class: 'qrcode'}, [
+                EL('a', {href: qrUrl}, [
+                    EL('span', {textContent: qrUrl}),
+                ]),
+            ]),
+            EL('common-qrcode', {text: qrUrl}), // TODO pass other parameters e.g. security
+        ];
+    }
+}
+customElements.define('localcoin-qrcode', LocalCoinQRcode); // Pass it to browser, note it MUST be xxx-yyy
+
+class Request extends HTMLElementExtended {
+    //constructor() {  super();  } // Default calls super
+    static get observedAttributes() { return ['amount']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
+    change = (e) => {
+        this.setAttribute('amount', e.target.value);
+        e.preventDefault(); // Don't trigger click on any parent
+    }
+    render() {
+        // TODO replace this with a prettier value collector
+        return ([
+            EL('localcoin-qrcode', {page: 'send', amount: this.getAttribute('amount')}), // Note amount may be null
+            EL('form',{onsubmit: this.submit}, [
+                EL('span', {textContent: 'How many units are you requesting'}), // TODO multicurrency
+                EL('br'),
+                EL('input', {type: 'number', value: this.getAttribute('amount'), onchange: this.change}),
+            ])
+        ]);
+    }
+}
+customElements.define('localcoin-request', Request); // Pass it to browser, note it MUST be xxx-yyy
+
+class Send extends HTMLElementExtended {
+    //constructor() {  super();  } // Default calls super
+    static get observedAttributes() { return ['amount', 'to']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
+    submit = (e) => {
+        this.setAttribute('amount', e.target.elements[0].value);
+        e.preventDefault(); // Don't trigger click on any parent
+    }
+    //TODO have to find a token to send, and mint a new token here
+    render() {
+        // TODO replace this with a prettier value collector
+        return ([
+            EL('localcoin-qrcode', {page: 'receive', amount: this.getAttribute('amount')}), // TODO need to rethink this QRCode as need sigs etc
+            this.getAttribute('amount')
+            ? EL('span', {textContent: `Sending ${this.getAttribute('amount')} units`}) // TODO multicurrency
+            : EL('form',{onsubmit: this.submit}, [
+                EL('span', {textContent: 'How many units are you sending'}), // TODO multicurrency
+                EL('br'),
+                EL('input', {type: 'number'}),
+                EL('input', {type: 'submit', value: 'request'}),
+            ])
+        ]);
+    }
+}
+customElements.define('localcoin-send', Send); // Pass it to browser, note it MUST be xxx-yyy
+
+class Top extends HTMLElementExtended {
+    constructor() { super(); } // Always call super
+    button_clicked = (e) => {
+        this.state.changemenu(e.target.getAttribute('value'));
         e.preventDefault(); // Don't trigger click on any parent
     }
     button_TODO = (e) => {
         console.log("DEBUG: this button is not yet implemented"); // TODO implement wherever this is used
         e.preventDefault(); // Don't trigger click on any parent
     }
-    top() {
-        //TODO-NextUp.1.1 get search string, then parse with URLSearchParms(window.location.search).get('menu')
+    render() {
         return ([
+            EL('style', {textContent: MainStyle}), // Using styles defined above
             EL('div',{class: 'logo'},[
                 EL('span', {textContent: 'LocalCoin'}),
             ]),
-            EL('div',{class: 'menu'}, [
-                EL('localcoin-button', {text: 'Request', onclick: this.button_request }),
-                EL('localcoin-button', {text: 'Send', onclick: this.button_TODO}),
-                EL('localcoin-button', {text: 'Receive', onclick: this.button_TODO}),
-                EL('localcoin-button', {text: 'Wallet', onclick: this.button_TODO}),
+            EL('div',{class: 'page'}, [
+                EL('localcoin-button', {text: 'Request', value: 'request', onclick: this.button_clicked }),
+                EL('localcoin-button', {text: 'Send', value: 'send', onclick: this.button_clicked }),
+                EL('localcoin-button', {text: 'Receive', value: 'receive', onclick: this.button_clicked }),
+                EL('localcoin-button', {text: 'Wallet', value: 'wallet', onclick: this.button_clicked }),
             ])
         ]);
     }
-    request() {
-        return ([
-            EL('localcoin-button', {text: 'Request not implemented', action: "xxx"}), //TODO - note this is the URL for request, not the button
-        ]);
+}
+customElements.define('localcoin-top', Top); // Pass it to browser, note it MUST be xxx-yyy
+
+// This is the main app - runs once and keeps running unless reload page
+class LocalCoinMain extends Main {
+    constructor() {
+        super();
+        for (let kv of new URLSearchParams(window.location.search).entries()) {
+            if (LocalCoinMain.observedAttributes.includes(kv[0])) { // Stop any hack on other attributes
+                this.setAttribute(kv[0], kv[1]);
+            }
+        }
+    }  // Default calls super
+    static get observedAttributes() { return ['page', 'amount']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
+   changemenu = (x) =>  {
+       this.setAttribute('page', x);
+    }
+    initSession() {
+       // TODO save and reload data from browser storage
+        if (!document.localcoinwallet) {
+            document.localcoinwallet = new Wallet();
+        }
     }
     render() {
         // First load will be "top" unless set in the URL, after will be set functionally
-        let menu = this.getAttribute('menu') || new URLSearchParams(window.location.search).get('menu') || 'top'
-        return ( [ // TODO-NextUp-1.1.3 Make this an WebComp = main with WebCOmp.page.
+        // TODO next line may not be fully needed since setting from search aprms
+        let page = this.getAttribute('page') || 'top'
+        return ( [
             EL('style', {textContent: MainStyle}), // Using styles defined above
-            (menu === 'top')
-            ? this.top()
-            : menu === 'request'
-            ? this.request()
-            : null, // TODO add other menu opts from top()
+            (page === 'top') ? EL('localcoin-top', {'changemenu': this.changemenu})
+            : page === 'request' ? EL('localcoin-request')
+            : page === 'send' ? EL('localcoin-send', {amount: this.getAttribute('amount')})
+            : EL('span', {textContent: `${page} is not implemented`}), // TODO add other page opts from top()
         ]);
     }
 }
-customElements.define('localcoin-main', Main); // Pass it to browser, note it MUST be xxx-yyy
+customElements.define('localcoin-main', LocalCoinMain); // Pass it to browser, note it MUST be xxx-yyy
 
 //Generally to construct a new Element class
 const ButtonStyle = `span {color: black; border: 2px grey solid; padding: 2px; margin: 2px}`; // Define any styles for this element
@@ -247,7 +358,7 @@ class Button extends HTMLElementExtended {
     constructor() {
         super(); // Always call super
     }
-    static get observedAttributes() { return ['text', 'action']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
+    static get observedAttributes() { return ['text', 'action', 'value']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
     render() {
         return ( [
             EL('style', {textContent: ButtonStyle}), // Using styles defined above
@@ -256,3 +367,16 @@ class Button extends HTMLElementExtended {
     }
 }
 customElements.define('localcoin-button', Button); // Pass it to browser, note it MUST be xxx-yyy
+
+// This is not a Web Component, one of these should exist
+class Wallet extends Object {
+    constructor() {
+        super();
+        this.state = {};
+        this.state.testing="ONE TWO THREE"
+        this.readFromStorage() || true; // TODO_NEXTUP looks like was doing something here - replaced with "true" for now.
+    }
+    readFromStorage() {
+        return false;
+    }
+}
