@@ -8,7 +8,7 @@
   getUrl(domain, {args})  Return a suitable URL by passing args through as parameters and encoding
   ErrorLoadingWrapper({url, qdata, err}, children)
     Wrap around a function if want to replace with an error message if err, or "Loading" if no data yet
-// ... TODO fill docs in after ErrorLoadingWrapper and backcopy to mitra.biz
+// ...TODO fill docs in after ErrorLoadingWrapper and backcopy to mitra.biz
 // ...TODO fill in docs after Standardized
 // ClickableBase visible
 //   shadowEls OneEntryStyle, fontAwesome;
@@ -29,11 +29,11 @@
     constructor() {
       super(); // Always call super
     }
+    static get observedAttributes() { return ['myparm']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
     loadContent() { // If defined it will call this when the element is defined enough to pass the test at shouldLoadWhenConnected
         this.loadSetRenderAndReplace(`/foo.json`, { case: this.state.myparm }, (err)=>{}); // Call a URL often passing state in the query, can postprocess using this.state.data
     }
     shouldLoadWhenConnected() { return !this.state.mydata && this.state.myparm}; // a test to define when it needs loading
-    static get observedAttributes() { return ['myparm']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
     render() {
             return ( [
                 EL('style' {textContent: Tstyle}) ), // Using styles defined above
@@ -41,7 +41,10 @@
                 EL('span', {textContent: "I am a T"})
             ]); // build an element tree for this element
     }
-    changeAttribute(name, newValue) {super.changeAttribute(name, name = "x" ? f(newValue): newValue) } // Useful preprocess of attributes
+    //Subclass changeAttribute to preprocess attributes, typically to turn strings into data, or special class certain values.
+    changeAttribute(name, newValue) {super.changeAttribute(name, name = "x" ? f(newValue): newValue) }
+    // setState loops through all the object returned from a query and set state, typically not subclassed (subclass changeAttribute instad)
+    // setState(obj) {
   }
   customElements.define('my-bar', MyBar); // Pass it to browser, note it MUST be xxx-yyy
 */
@@ -140,7 +143,6 @@ const ErrorLoadingWrapper = ({url, qdata, err}, children) => (
             : children
 );
 
-//TODO document from here down - in function and at top of file
 class HTMLElementExtended extends HTMLElement {
     /*
       Parent class for extending HTMLElement for a new element, usually an element will extend this instead of HTMLElement
@@ -148,9 +150,11 @@ class HTMLElementExtended extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({mode: 'open'});
-        this.state = {}; // Equivalent of React .state
+        this.state = {}; // Equivalent of React .state, store local state here
     }
     static get observedAttributes() { return []; }; // Override with array of (string) attributes passed
+    // Called to load a URL, set state based on the data returned, render and then call the callback,
+    // it should not need subclassing and us usually called by subclasses of loadContent
     loadSetRenderAndReplace(url, q, cb) {
         GET(getUrl(url, q), {}, (err, data) => {
             this.setState({url, err, data});
@@ -158,14 +162,18 @@ class HTMLElementExtended extends HTMLElement {
             if (cb) cb(err); // Usually there is no extra CB
         });
     }
+    // changeAttribute will be called for each attribute changed,
+    // its most common use is to turn string values into data and is subclassed to do so.
     changeAttribute(name, newValue) {
         if ((name === "visible") && (newValue === "false")) newValue = false;
         this.state[name] = newValue;
     }
+    // Loop through all the object returned from a query and set state, typically not subclassed (subclass changeAttribute instad)
     setState(obj) {
         Object.keys(obj).forEach(k => this.changeAttribute(k, obj[k]));
         // Never calling loadContent() from here as setState is called from loadContent!
     }
+    //TODO document from here down - in function and at top of file
     // This function typically indicates we have enough information to initiate what might be a slow load process (e.g. fetch from net)
     shouldLoadWhenConnected() { return false; } // Overridden with condition to initiate load
     connectedCallback() {
@@ -219,7 +227,6 @@ class QRcodeComponent extends HTMLElementExtended {
 customElements.define('common-qrcode', QRcodeComponent); // Pass it to browser, note it MUST be xxx-yyy
 
 class LocalCoinQRcode extends HTMLElementExtended {
-    // TODO split this into the part that makes the url and the part that renders it (which gets passed qrUrl)
     // constructor() { super(); } // Default calls super
     static get observedAttributes() { return ['amount', 'page']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
     render() {
@@ -380,3 +387,4 @@ class Wallet extends Object {
         return false;
     }
 }
+

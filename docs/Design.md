@@ -165,7 +165,6 @@ If Alice does not have the app, then she can scan Bob's QR code with her browser
 * Server confirms the public key "bob" signed this, and accepts registration bob@bob.com -> bob
 
 #### TODO
-* Find QR display (scanner is in browser but maybe good in app too)
 * Find QR scanner and add to app 
   * https://developer.mozilla.org/en-US/docs/Web/API/BarcodeDetector/detect - but needs image from camera
   * https://www.dynamsoft.com/codepool/web-qr-code-scanner-barcode-detection-api.html
@@ -179,6 +178,7 @@ If Alice does not have the app, then she can scan Bob's QR code with her browser
 * Constraints on coins e.g. only xfer to issuer
 * Think replacing nested tokens by content addressed tokens, i.e. this is the hash of them. 
 * Build local storage wrapper
+* Consider conversion to typescript - but how does that work with webcomponents w/o compile step
 
 #### Notes:
 https://github.com/mebjas/html5-qrcode or https://github.com/nimiq/qr-scanner

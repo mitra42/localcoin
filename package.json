@@ -8,7 +8,9 @@
   "bugs": "https://github.com/mitra42/localcoin/issues",
   "description": "A concept for a local QR code driven coin running in browsers with distributed servers",
   "dependencies": {
-    "qrcode": "^1.5.1"
+    "qrcode": "^1.5.1",
+    "@undecaf/zbar-wasm": "^0.9.11",
+    "@undecaf/barcode-detector-polyfill": "^0.9.13"
   },
   "devDependencies": {
     "eslint": "^7.27.0",

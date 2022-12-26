@@ -36,4 +36,4 @@ see https://github.com/mitra42/localcoin/issues as it develops
 * Alice: Click Send
   * TODO should not be any QR/URL when sending 0
   * Adjust number to send
-* Bob: Scan QR/Click URL for Receive (see avove)
+* Bob: Scan QR/Click URL for Receive (see above)
