@@ -375,6 +375,115 @@ class Button extends HTMLElementExtended {
 }
 customElements.define('localcoin-button', Button); // Pass it to browser, note it MUST be xxx-yyy
 
+const QRScannerStyle = `div.wrap {width: 320px; height: 240px; border: 2px grey solid; padding: 2px; margin: 2px}`; // Define any styles for this element
+class QRscanner extends HTMLElementExtended {
+    // TODO-next2 - this is merging code from temp.js -> index.html -> here
+    constructor() {
+        super();
+        this.boundtick = this.tick.bind(this);
+    } // default does nothing
+    static get observedAttributes() { return []; }
+
+    canvas_drawLine(start, end) {
+        let context = this.context;
+        context.beginPath();
+        context.moveTo(start.x, start.y);
+        context.lineTo(end.x, end.y);
+        context.lineWidth = 5;
+        context.strokeStyle = 'white';
+        context.stroke();
+    }
+    canvas_drawSquare(cornerPoints) {
+        this.canvas_drawLine(cornerPoints[0], cornerPoints[1]);
+        this.canvas_drawLine(cornerPoints[1], cornerPoints[2]);
+        this.canvas_drawLine(cornerPoints[2], cornerPoints[3]);
+        this.canvas_drawLine(cornerPoints[3], cornerPoints[0]);
+    }
+    tick() {
+        // Names correspond to old code
+        let loadingMessage = this.loadingMessage;
+        let video = this.video;
+        let canvasElement = this.canvas;
+        let outputData = this.outputData;
+        // END Names corresponding to old code
+        loadingMessage.innerText = "⌛ Loading video...";
+        let boundtick = this.boundtick; // Have to find it here. where "this" is still defined
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            loadingMessage.hidden = true;
+            canvasElement.hidden = false;
+            //Use the height defined in the canvas element
+            //canvasElement.height = video.videoHeight;
+            //canvasElement.width = video.videoWidth;
+            this.context.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+            //TODO-next2 probably dont need imageData as BarcodeDetector can use canvasElement - Test this
+            var imageData = this.context.getImageData(0, 0, canvasElement.width, canvasElement.height);
+            BarcodeDetector.getSupportedFormats()
+                .then((formats) => {
+                    //console.log(formats);
+                    //let detector = new BarcodeDetector({ formats: ['aztec','data_matrix','qr_code'] });
+                    let detector = new BarcodeDetector({ formats: ['qr_code'] });
+                    //let detector = new BarcodeDetector({ formats });  // Uncomment to test other barcodes than QR
+                    detector.detect(imageData)
+                        .catch((err) =>
+                            console.log("Barcode detect error",err)) // TODO-next2 also to message
+                        .then((barcodes, err) => {
+                            if (err) {
+                                console.log("Barcode detect error", err); //TODO-next2 also in loading
+                            }
+                            if (barcodes.length > 0) {
+                                const qr = barcodes[0]; // Ignore after first found
+                                console.log("barcodes",barcodes);  // Only for debugging
+                                this.canvas_drawSquare(qr.cornerPoints);
+                                outputData.innerText = qr.rawValue;  // Only for debugging
+                                this.result = qr.rawValue; // TODO-next2 return this value via a callback instead
+                                // Intentionally not going back for a new frame
+                            } else {
+                                requestAnimationFrame(boundtick);
+                            }
+                        }); // Saw something about barcode.rawValue
+                    //TODO-next2 use canvasElement directly instead of imagedata
+                });
+            // Following example in https://www.npmjs.com/package/@undecaf/barcode-detector-polyfill
+        } else {
+            requestAnimationFrame(boundtick);
+        }
+    }
+    wire_camera_to_video_and_tick() {
+        // Wire the camera to the video
+        let video = this.video;
+        let boundtick = this.boundtick; // Have to find it here. where "this" is still defined
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscre
+                // Next line gets a play() request interrupted by a new load request - says uncaughtn
+                video.play().then(
+                    () => requestAnimationFrame(boundtick),
+                    (err) => console.log(err)
+                );
+            });
+    }
+    render() {
+        //this.canvas = EL("canvas", {id: 'canvas', width: '640', height: '480'});
+        this.canvas = EL("canvas", {id: 'canvas', width: '320', height: '240'});
+        this.video = EL("video", {width: '320', height: '240'}); // Not displayed
+        this.context = this.canvas.getContext("2d", {willReadFrequently: true});
+        this.loadingMessage = EL('div');
+        this.outputData = EL('div');
+        this.wire_camera_to_video_and_tick();
+        return ( [
+            EL('style', {textContent: QRScannerStyle}), // Using styles defined above
+            EL("div", {class: 'wrap'}, [
+                this.canvas,
+                this.loadingMessage,
+                this.outputData,
+            ]),
+        ]);
+    }
+
+}
+customElements.define('qr-scanner', QRscanner); // Pass it to browser, note it MUST be xxx-yyy
+
 // This is not a Web Component, one of these should exist
 class Wallet extends Object {
     constructor() {
@@ -387,4 +496,5 @@ class Wallet extends Object {
         return false;
     }
 }
+
 
