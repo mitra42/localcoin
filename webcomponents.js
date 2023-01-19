@@ -8,8 +8,12 @@
   getUrl(domain, {args})  Return a suitable URL by passing args through as parameters and encoding
   ErrorLoadingWrapper({url, qdata, err}, children)
     Wrap around a function if want to replace with an error message if err, or "Loading" if no data yet
-// ...TODO fill docs in after ErrorLoadingWrapper and backcopy to mitra.biz
-// ...TODO fill in docs after Standardized
+  class HTMLElementExtended
+  - never used directly, its a base class, extends HTMLElement, and is itself extended for each webcomponent
+  - for documentation see the class
+
+// ...TODO-DOCS backcopy to mitra.biz, dist-recommendations, imap_browser/imap_webcomponents.js and simulator.js
+// ...TODO-DOCS fill in docs after Standardized
 // ClickableBase visible
 //   shadowEls OneEntryStyle, fontAwesome;
 //   show(); hide(); render_control() (chevron)
@@ -25,26 +29,21 @@
 
   //Generally to construct a new Element class
   const Tstyle = `span {color: red}`; // Define any styles for this element
-  class MyBar extends HTMLElementExtended {
-    constructor() {
-      super(); // Always call super
-    }
-    static get observedAttributes() { return ['myparm']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
+  const MyBar extends HTMLElementExtended {
+    // constructor() { super(); } // Only subclass constructor if adding something, but call super() if do so.
     loadContent() { // If defined it will call this when the element is defined enough to pass the test at shouldLoadWhenConnected
         this.loadSetRenderAndReplace(`/foo.json`, { case: this.state.myparm }, (err)=>{}); // Call a URL often passing state in the query, can postprocess using this.state.data
     }
     shouldLoadWhenConnected() { return !this.state.mydata && this.state.myparm}; // a test to define when it needs loading
+    static get observedAttributes() { return ['myparm']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
     render() {
-            return ( [
-                EL('style' {textContent: Tstyle}) ), // Using styles defined above
-                EL('link', {rel: 'stylesheet', href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" }), // Or on the net
-                EL('span', {textContent: "I am a T"})
-            ]); // build an element tree for this element
+            return [
+              EL('style' {textContent: Tstyle}) ); // Using styles defined above
+              EL('link', {rel: 'stylesheet', href: "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" }); // Or on the net
+              EL(tag'span', {textContent: "I am a T"}),
+            ]; // build an element tree for this element
     }
-    //Subclass changeAttribute to preprocess attributes, typically to turn strings into data, or special class certain values.
-    changeAttribute(name, newValue) {super.changeAttribute(name, name = "x" ? f(newValue): newValue) }
-    // setState loops through all the object returned from a query and set state, typically not subclassed (subclass changeAttribute instad)
-    // setState(obj) {
+    changeAttribute(name, newValue) {super.changeAttribute(name, name = "x" ? f(newValue): newValue) } // Useful preprocess of attributes
   }
   customElements.define('my-bar', MyBar); // Pass it to browser, note it MUST be xxx-yyy
 */
@@ -97,14 +96,18 @@ function EL(tag, attributes = {}, children) {
      * children: Elements inside this tag
      */
     const el = document.createElement(tag);
+    // Strangely - at least on Firefox - this seems to get run before the constructor of the element
+    // hence the creation of el.state if required
     Object.entries(attributes)
         .forEach((kv) => {
             if (['textContent', 'onsubmit', 'onclick', 'onchange', 'innerHTML', 'style', 'action'].includes(kv[0])) {
                 el[kv[0]] = kv[1];
-            } else if ((typeof(kv[1]) === 'object') && (typeof(el.state) !== 'undefined')) { // e.g tagcloud, data
-                el.state[kv[0]] = kv[1];
-            } else if ((typeof(kv[1]) === 'function') && (typeof(el.state) !== 'undefined')) {
-                // Experimental e.g passing function on parent to daughtr
+            } else if (typeof(kv[1]) === 'object') {
+                if (typeof el.state === 'undefined') el.state = {};
+                el.state[kv[0]] = kv[1]; // e.g tagcloud, data
+            } else if (typeof(kv[1]) === 'function') {
+                if (typeof el.state === 'undefined') el.state = {};
+                // Experimental e.g passing function on parent to daughter
                 el.state[kv[0]] = kv[1];
             } else if ((kv[1] !== null) && (typeof(kv[1]) !== "undefined"))  {
                 // Do not set attributes to null or undefined, they will end up as 'null' or 'undefined'
@@ -147,14 +150,32 @@ class HTMLElementExtended extends HTMLElement {
     /*
       Parent class for extending HTMLElement for a new element, usually an element will extend this instead of HTMLElement
      */
+    /*
+    constructor() - sets state, pulls variables from URL, or storage, binds functions etc
+    static get observedAttributes - return array of names of attributes (just strings) passed
+    loadSetRenderAndReplace(url, q, cb) - fetch URL, set state from data, render new version
+    changeAttribute(name, newValue) - set attributes on state{}, typically converts strings to numbers or bools etc
+    setState(obj) - loop over obj calling changeAttribute
+    bool shouldLoadWhenConnected() - test if have sufficient state to load data for the element.
+    connectedCallback - called when attached to DOM, sets state{}; maybe load data; and renders
+    attributeChangedCallback(name, oldValue, newValue) - called when attributes change or added; set state{}; maybe load data; render
+    loadContent() - fetch data from server
+    renderAndReplace() - render, and then replace existing nodes
+    [EL] render() - render an array of nodes  ALWAYS subclassed
+    */
+    // extend this to setup initial data, e.g. to get params from URL; or to bind functions (e.g. tick)
     constructor() {
         super();
         this.attachShadow({mode: 'open'});
-        this.state = {}; // Equivalent of React .state, store local state here
+        // At least on firefox the attribute handling part of "EL" is run before this constructor, and needs to create this.state
+        if (typeof this.state === 'undefined') this.state = {}; // Equivalent of React .state, store local state here
     }
-    static get observedAttributes() { return []; }; // Override with array of (string) attributes passed
+
+    // Override this to return an array of (string) attributes passed
+    static get observedAttributes() { return []; };
+
     // Called to load a URL, set state based on the data returned, render and then call the callback,
-    // it should not need subclassing and us usually called by subclasses of loadContent
+    // it should not need subclassing and is usually called by subclasses of loadContent
     loadSetRenderAndReplace(url, q, cb) {
         GET(getUrl(url, q), {}, (err, data) => {
             this.setState({url, err, data});
@@ -162,53 +183,77 @@ class HTMLElementExtended extends HTMLElement {
             if (cb) cb(err); // Usually there is no extra CB
         });
     }
+
     // changeAttribute will be called for each attribute changed,
     // its most common use is to turn string values into data and is subclassed to do so.
+    // This is called by attributeChangedCallback so new values end up in attributes (as strings) and in state (as bools, numbrs etc)
+    // TODO this could be more generalized for boolean, integer, etc attributes
     changeAttribute(name, newValue) {
         if ((name === "visible") && (newValue === "false")) newValue = false;
         this.state[name] = newValue;
     }
-    // Loop through all the object returned from a query and set state, typically not subclassed (subclass changeAttribute instad)
+    // Loop through all the object returned from a query and set state,
+    // typically not subclassed (subclass changeAttribute instead)
     setState(obj) {
         Object.keys(obj).forEach(k => this.changeAttribute(k, obj[k]));
         // Never calling loadContent() from here as setState is called from loadContent!
     }
-    //TODO document from here down - in function and at top of file
     // This function typically indicates we have enough information to initiate what might be a slow load process (e.g. fetch from net)
-    shouldLoadWhenConnected() { return false; } // Overridden with condition to initiate load
+    // Overridden with a test specific to the required parameters of a webcomponent
+    shouldLoadWhenConnected() { return false; }
+
+    //Called when the element is connected into the DOM - copy attributes to state; maybe load content; and render
+    //https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#using_the_lifecycle_callbacks
+    //This should not need subclassing, more likely to sublass functions it calls.
     connectedCallback() {
+        // TODO Its not clear this loop is needed, check if attributeChangedCallback already called ?
         this.constructor.observedAttributes
             .forEach(name => this.changeAttribute(name, this.getAttribute(name)));
         if (this.shouldLoadWhenConnected()) this.loadContent();
-        this.renderAndReplace(); // Note this render is done before loadContent complete, loadContent typically will call renderAndReplace again
+        // Note this render is done before loadContent complete, loadContent typically will call renderAndReplace again
+        // renderAndReplace should test if it wants to render an empty element if there is no data
+        this.renderAndReplace();
+
     }
+    // Called whenever a attribute is added or changed,
+    // https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#using_the_lifecycle_callbacks
+    // unlikely to be subclassed
     attributeChangedCallback(name, oldValue, newValue) {
-        this.changeAttribute(name, newValue);
+        this.changeAttribute(name, newValue); // Sets state{} may also munge value (e.g. string to boolean)
+        // reconsider if now have sufficient data to load content
         if (this.isConnected && this.constructor.observedAttributes.includes(name) && this.shouldLoadWhenConnected()) {
             this.loadContent(); }
-        this.renderAndReplace(); // note this happens before the loadContent completes
+        // note this render happens before the loadContent completes
+        this.renderAndReplace();
     }
+    // subclass this to call server side and fetch data
     loadContent() {
-        console.error("loadContent should be defined in a subclass if shouldLoadWhenConnected is set");
+        console.error("loadContent should be defined in a subclass if shouldLoadWhenConnected ever returns true");
     }
+    // render() a new set of nodes, then remove existing ones and add new ones
+    // Unlikely to be subclassed (subclass this.render)
     renderAndReplace() {
-        /* render() a new set of nodes, then remove existing ones and add new ones */
         const rendered = [ this.render() ];
         const skipNodes = 0; // = this.shadowRoot.styleNodes - note deprecated, typically render style each time now
         while (this.shadowRoot.childNodes.length > skipNodes) this.shadowRoot.childNodes[skipNodes].remove()
         /* Flatten render (not sure why at depth=3), eliminate any undefined */
         this.shadowRoot.append(...rendered.flat(3).filter(n=>!!n));
     }
+    /*
+    // Intentionally not defined in the parent class, and must be defined in each subclass, return array of HTMLElement
+    render() {}
+     */
 }
+
 // ===== END OF STANDARD PART IN webcomponents.js ON mitrabiz and dist-recommendations
+//TODO-NEXT document from here down - in function and at top of file
 const MainStyle = `span {color: red} div.logo {padding: 10px}`; // TODO Define any styles for this element
 
 class Main extends HTMLElementExtended { // TMove this to WebComponents standard section
-    constructor() {
-        super(); // Always call super
-    }
+    // constructor() { super(); }
     static get observedAttributes() { return ['page']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
 }
+
 const QRstyle = `div.qrcode {color: black; border: 2px grey solid; background-color: aquamarine; padding: 2px; margin: 2px}`; // Define any styles for this element
 
 class QRcodeComponent extends HTMLElementExtended {
@@ -297,7 +342,7 @@ class Send extends HTMLElementExtended {
 customElements.define('localcoin-send', Send); // Pass it to browser, note it MUST be xxx-yyy
 
 class Top extends HTMLElementExtended {
-    constructor() { super(); } // Always call super
+    //constructor() { super(); } // Always call super
     button_clicked = (e) => {
         this.state.changemenu(e.target.getAttribute('value'));
         e.preventDefault(); // Don't trigger click on any parent
@@ -367,9 +412,7 @@ customElements.define('localcoin-main', LocalCoinMain); // Pass it to browser, n
 const ButtonStyle = `span {color: black; border: 2px grey solid; padding: 2px; margin: 2px}`; // Define any styles for this element
 class Button extends HTMLElementExtended {
     // Note action is handled by setting onclick
-    constructor() {
-        super(); // Always call super
-    }
+    // constructor() { super(); }
     static get observedAttributes() { return ['text', 'action', 'value']; }; // Tell it what parms to load - note these are string parms, not objects which are handled differently
     render() {
         return ( [
