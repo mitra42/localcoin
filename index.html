@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <title>Local Currency App</title>
     <script src="/node_modules/qrcode/build/qrcode.js"></script>
-    <!--TODO-next2 use node_modules version-->
     <script src="/node_modules/@undecaf/zbar-wasm/dist/index.js"></script>
+    <!--<script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.11/dist/index.js"></script>-->
     <script src="/node_modules/@undecaf/barcode-detector-polyfill/dist/index.js"></script>
-    <!--
-    <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.11/dist/index.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@undecaf/barcode-detector-polyfill@0.9.12/dist/index.js"></script>
-    -->
+    <!--<script src="https://cdn.jsdelivr.net/npm/@undecaf/barcode-detector-polyfill@0.9.12/dist/index.js"></script>-->
     <script>
         try {
             window['BarcodeDetector'].getSupportedFormats()
@@ -23,7 +20,6 @@
 <body>
 <!-- next should be replaced by a switch on a parameter e.g. to menu="request" -->
 <localcoin-main></localcoin-main>
-<qr-scanner></qr-scanner>
 
 
 

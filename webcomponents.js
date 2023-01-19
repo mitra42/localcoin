@@ -306,6 +306,10 @@ class Top extends HTMLElementExtended {
         console.log("DEBUG: this button is not yet implemented"); // TODO implement wherever this is used
         e.preventDefault(); // Don't trigger click on any parent
     }
+    qr_found = (msg) => {
+        // TODO-next3 scan this message and decide what to do.
+        console.log('Found QR code', msg);
+    }
     render() {
         return ([
             EL('style', {textContent: MainStyle}), // Using styles defined above
@@ -317,16 +321,17 @@ class Top extends HTMLElementExtended {
                 EL('localcoin-button', {text: 'Send', value: 'send', onclick: this.button_clicked }),
                 EL('localcoin-button', {text: 'Receive', value: 'receive', onclick: this.button_clicked }),
                 EL('localcoin-button', {text: 'Wallet', value: 'wallet', onclick: this.button_clicked }),
-            ])
+            ]),
+            EL('qr-scanner', { onfound: this.qr_found } )
         ]);
     }
 }
 customElements.define('localcoin-top', Top); // Pass it to browser, note it MUST be xxx-yyy
-
 // This is the main app - runs once and keeps running unless reload page
-class LocalCoinMain extends Main {
+class LocalCoinMain extends Main { //TODO some of this class may be generic, move that to Main
     constructor() {
         super();
+        // extend constructor get params from URL
         for (let kv of new URLSearchParams(window.location.search).entries()) {
             if (LocalCoinMain.observedAttributes.includes(kv[0])) { // Stop any hack on other attributes
                 this.setAttribute(kv[0], kv[1]);
@@ -375,9 +380,14 @@ class Button extends HTMLElementExtended {
 }
 customElements.define('localcoin-button', Button); // Pass it to browser, note it MUST be xxx-yyy
 
+// ---- QR Scanner component ---------------
+// https://developer.mozilla.org/en-US/docs/Web/API/BarcodeDetector/detect - but needs image from camera
+// see also https://www.dynamsoft.com/codepool/web-qr-code-scanner-barcode-detection-api.html
+// see also https://github.com/xulihang/barcode-detection-api-demo/blob/main/scanner.js
+// see also https://dev.to/ycmjason/detecting-barcode-from-the-browser-d7n
+// see also https://www.npmjs.com/package/@undecaf/barcode-detector-polyfill I'm following this example
 const QRScannerStyle = `div.wrap {width: 320px; height: 240px; border: 2px grey solid; padding: 2px; margin: 2px}`; // Define any styles for this element
 class QRscanner extends HTMLElementExtended {
-    // TODO-next2 - this is merging code from temp.js -> index.html -> here
     constructor() {
         super();
         this.boundtick = this.tick.bind(this);
@@ -393,11 +403,27 @@ class QRscanner extends HTMLElementExtended {
         context.strokeStyle = 'white';
         context.stroke();
     }
+    canvas_drawLine3(start, end) {
+        let p1 = { x: start.x + (end.x - start.x)/4, y: start.y + (end.y - start.y)/4 };
+        let p2 = { x: start.x + (end.x - start.x)*3/4, y: start.y + (end.y - start.y)*3/4};
+        this.canvas_drawLine(start, p1);
+        this.canvas_drawLine(p2, end);
+    }
     canvas_drawSquare(cornerPoints) {
-        this.canvas_drawLine(cornerPoints[0], cornerPoints[1]);
-        this.canvas_drawLine(cornerPoints[1], cornerPoints[2]);
-        this.canvas_drawLine(cornerPoints[2], cornerPoints[3]);
-        this.canvas_drawLine(cornerPoints[3], cornerPoints[0]);
+        this.canvas_drawLine3(cornerPoints[0], cornerPoints[1]);
+        this.canvas_drawLine3(cornerPoints[1], cornerPoints[2]);
+        this.canvas_drawLine3(cornerPoints[2], cornerPoints[3]);
+        this.canvas_drawLine3(cornerPoints[3], cornerPoints[0]);
+    }
+    message(msg, err) {
+        if (msg) {
+            console.log(msg);
+            if (err) console.error(err);
+            this.loadingMessage.innerText = msg;
+            this.loadingMessage.hidden = false;
+        } else {
+            this.loadingMessage.hidden = true;
+        }
     }
     tick() {
         // Names correspond to old code
@@ -406,44 +432,40 @@ class QRscanner extends HTMLElementExtended {
         let canvasElement = this.canvas;
         let outputData = this.outputData;
         // END Names corresponding to old code
-        loadingMessage.innerText = "⌛ Loading video...";
+        this.message("⌛ Loading video...");
         let boundtick = this.boundtick; // Have to find it here. where "this" is still defined
         if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            loadingMessage.hidden = true;
+            this.message();
             canvasElement.hidden = false;
             //Use the height defined in the canvas element
             //canvasElement.height = video.videoHeight;
             //canvasElement.width = video.videoWidth;
             this.context.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-            //TODO-next2 probably dont need imageData as BarcodeDetector can use canvasElement - Test this
-            var imageData = this.context.getImageData(0, 0, canvasElement.width, canvasElement.height);
+            //Example pulls imageData, but BarcodeDetector can use canvasElement
+            //var imageData = this.context.getImageData(0, 0, canvasElement.width, canvasElement.height);
             BarcodeDetector.getSupportedFormats()
-                .then((formats) => {
-                    //console.log(formats);
+                .then((supportedFormats) => {
                     //let detector = new BarcodeDetector({ formats: ['aztec','data_matrix','qr_code'] });
-                    let detector = new BarcodeDetector({ formats: ['qr_code'] });
-                    //let detector = new BarcodeDetector({ formats });  // Uncomment to test other barcodes than QR
-                    detector.detect(imageData)
+                    //Polyfill currently doesnt support aztec or data_matrix QRcodes, just qr_code
+                    let formats = ['aztec','data_matrix','qr_code'].filter(s => supportedFormats.includes(s));
+                    let detector = new BarcodeDetector({ formats });
+                    detector.detect(canvasElement)
                         .catch((err) =>
-                            console.log("Barcode detect error",err)) // TODO-next2 also to message
+                            this.message('Barcode detect error', err))
                         .then((barcodes, err) => {
-                            if (err) {
-                                console.log("Barcode detect error", err); //TODO-next2 also in loading
-                            }
                             if (barcodes.length > 0) {
                                 const qr = barcodes[0]; // Ignore after first found
-                                console.log("barcodes",barcodes);  // Only for debugging
                                 this.canvas_drawSquare(qr.cornerPoints);
-                                outputData.innerText = qr.rawValue;  // Only for debugging
-                                this.result = qr.rawValue; // TODO-next2 return this value via a callback instead
+                                this.message(qr.rawValue);
+                                this.result = qr.rawValue; // Allow value to be foun dpassively
+                                if (this.state.onfound) this.state.onfound(qr.rawValue);
                                 // Intentionally not going back for a new frame
                             } else {
                                 requestAnimationFrame(boundtick);
                             }
-                        }); // Saw something about barcode.rawValue
-                    //TODO-next2 use canvasElement directly instead of imagedata
+                        });
                 });
-            // Following example in https://www.npmjs.com/package/@undecaf/barcode-detector-polyfill
+            // Following example in
         } else {
             requestAnimationFrame(boundtick);
         }
@@ -459,7 +481,7 @@ class QRscanner extends HTMLElementExtended {
                 // Next line gets a play() request interrupted by a new load request - says uncaughtn
                 video.play().then(
                     () => requestAnimationFrame(boundtick),
-                    (err) => console.log(err)
+                    (err) => this.message(err)
                 );
             });
     }
@@ -468,7 +490,7 @@ class QRscanner extends HTMLElementExtended {
         this.canvas = EL("canvas", {id: 'canvas', width: '320', height: '240'});
         this.video = EL("video", {width: '320', height: '240'}); // Not displayed
         this.context = this.canvas.getContext("2d", {willReadFrequently: true});
-        this.loadingMessage = EL('div');
+        this.loadingMessage = EL('div'); // We might pass loadingMessage in as a parameter
         this.outputData = EL('div');
         this.wire_camera_to_video_and_tick();
         return ( [

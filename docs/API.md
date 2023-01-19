@@ -96,4 +96,4 @@ receive([token])
 ** TODO think about reject
 ** redeems with issuers or saves in wallet
 
-TODO - next scenario 
+TODO-next scenario 

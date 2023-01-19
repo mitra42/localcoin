@@ -165,13 +165,9 @@ If Alice does not have the app, then she can scan Bob's QR code with her browser
 * Server confirms the public key "bob" signed this, and accepts registration bob@bob.com -> bob
 
 #### TODO
-* Find QR scanner and add to app 
-  * https://developer.mozilla.org/en-US/docs/Web/API/BarcodeDetector/detect - but needs image from camera
-  * https://www.dynamsoft.com/codepool/web-qr-code-scanner-barcode-detection-api.html
-  * https://github.com/xulihang/barcode-detection-api-demo/blob/main/scanner.js
-  * https://dev.to/ycmjason/detecting-barcode-from-the-browser-d7n
 * SETTLEMENT between Issuers via broker
 * ATM (withdraw balance to app as a token)
+* Add encryption - prob via https://www.npmjs.com/package/libsodium-wrappers or https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API
 * Transaction fees - maybe via "gas"
 * Backup and restore tokens
 * Multi-currency
@@ -179,6 +175,7 @@ If Alice does not have the app, then she can scan Bob's QR code with her browser
 * Think replacing nested tokens by content addressed tokens, i.e. this is the hash of them. 
 * Build local storage wrapper
 * Consider conversion to typescript - but how does that work with webcomponents w/o compile step
+* Figure out how to run this on a phone
 
 #### Notes:
 https://github.com/mebjas/html5-qrcode or https://github.com/nimiq/qr-scanner
