@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Local Currency App</title>
-    <script src="/node_modules/qrcode/build/qrcode.js"></script><!-- defines QRcode -->
-    <script src="/node_modules/@undecaf/zbar-wasm/dist/index.js"></script>
+    <script src="./node_modules/qrcode/build/qrcode.js"></script><!-- defines QRcode -->
+    <script src="./node_modules/@undecaf/zbar-wasm/dist/index.js"></script>
     <!--<script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@0.9.11/dist/index.js"></script>-->
-    <script src="/node_modules/@undecaf/barcode-detector-polyfill/dist/index.js"></script>
+    <script src="./node_modules/@undecaf/barcode-detector-polyfill/dist/index.js"></script>
     <!--<script src="https://cdn.jsdelivr.net/npm/@undecaf/barcode-detector-polyfill@0.9.12/dist/index.js"></script>-->
     <script>
         try {
@@ -15,7 +15,7 @@
             window['BarcodeDetector'] = barcodeDetectorPolyfill.BarcodeDetectorPolyfill
         }
     </script>
-    <script src="/webcomponents.js" type="module"></script>
+    <script src="./webcomponents.js" type="module"></script>
 </head>
 <body>
 <!-- next should be replaced by a switch on a parameter e.g. to menu="request" -->

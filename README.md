@@ -5,7 +5,7 @@ Please see Design.md
 
 ### TODO
 List of major tasks.
-see https://github.com/mitra42/localcoin/issues as it develops
+  see https://github.com/mitra42/localcoin/issues as it develops
 
 * write API drawing from README.md
 ** App
@@ -37,3 +37,12 @@ see https://github.com/mitra42/localcoin/issues as it develops
   * TODO should not be any QR/URL when sending 0
   * Adjust number to send
 * Bob: Scan QR/Click URL for Receive (see above)
+
+CURRENT STATE AS OF 13 MARCH
+none of the debugging (dont connect) or loading file directly work (cors)
+so run http-server in the directory
+open localhost:8080
+Allow use of camera
+Hit receive - to display QR code OR
+hold up a URL to have it scanned - notice in console it calls event in webcomponents.Top
+The QR codes in evernote for lotus wifi work fine for testing
