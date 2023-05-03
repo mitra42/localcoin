@@ -1,5 +1,5 @@
-import { HTMLElementExtended, EL, getUrl } from "./modules/htmlelementextended.js";
-import { QRScanExtended, QRCodeExtended } from "./modules/qrelementextended.js";
+import {EL, HTMLElementExtended, getUrl} from './node_modules/html-element-extended/htmlelementextended.js';
+import { QRScanExtended, QRCodeExtended } from './node_modules/html-element-extended/qrelementextended.js';
 
 /* global QRCode */
 
