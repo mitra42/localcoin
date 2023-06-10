@@ -11,7 +11,7 @@
     "@undecaf/barcode-detector-polyfill": "^0.9.13",
     "@undecaf/zbar-wasm": "^0.9.11",
     "html-element-extended": "https://github.com/mitra42/html-element-extended",
-    "qrcode": "^1.5.1",
+    "qrcode": "^1.5.1"
   },
   "devDependencies": {
     "eslint": "^7.27.0",
