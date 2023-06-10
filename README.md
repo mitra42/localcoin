@@ -28,8 +28,8 @@ hold up a URL to have it scanned - notice in console it calls event in webcompon
 The QR codes in evernote for lotus wifi work fine for testing
 
 #### TODO before continuing test sequence
-* Work through bugs in current state above that happened since use of module
-* See if can load qrcode module without polyfiller etc in index.html
+* retest above now using qrelementextended as a module
+* esp See if can load qrcode detector without polyfiller etc in index.html
 
 #### Current Test sequence
 * Open index.html (or Debug index.html in IDE)

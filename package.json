@@ -10,8 +10,8 @@
   "dependencies": {
     "@undecaf/barcode-detector-polyfill": "^0.9.13",
     "@undecaf/zbar-wasm": "^0.9.11",
-    "html-element-extended": "https://github.com/mitra42/html-element-extended",
-    "qrcode": "^1.5.1"
+    "html-element-extended": "^0.0.4",
+    "qrcode-generator-es6": "^1.1.4"
   },
   "devDependencies": {
     "eslint": "^7.27.0",
